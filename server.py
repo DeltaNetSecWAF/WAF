@@ -12,7 +12,9 @@ def sanitize_input(input_string):
 
 @app.route('/submit', methods=['POST'])
 def submit_form():
-    user_input = request.form.get('user_input')
+    print("got the request!")
+    user_input = request.form.get('input')
+    print(user_input)
 
     sanitized_input = sanitize_input(user_input)
 
