@@ -12,10 +12,12 @@
 </head>
 
 <body>
-    <form hx-post="/submit">
+    <form hx-target="#status" hx-swap="innerHTML" hx-post="/submit">
         <label for="input">Input
             <input type="text" name="input"></input>
         </label>
         <button type="submit" value="submit">Submit</button>
     </form>
+
+    <p id="status"></p>
 </body>

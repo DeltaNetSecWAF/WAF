@@ -1,10 +1,11 @@
 from flask import Flask, request, render_template, abort
 import re
+from rate_limiter import RateLimiter
 
 app = Flask(__name__)
+rateLimiter = RateLimiter(5, 1)
 
 ALLOWED_TAGS = ['<p>', '<br>', '<strong>', '<em>', '<ul>', '<li>', '<ol>']
-
 
 def sanitize_input(input_string):
     # Implement your input sanitization logic here
@@ -46,14 +47,18 @@ def check_query_parameterized(sql_query):
         return sql_query
     else:
         abort(400, 'Unparameterized SQL Query')
-
+    
 
 @app.route('/submit', methods=['POST'])
 def submit_form():
     print("got the request!")
+    ip = request.remote_addr
+    rateLimiter.addRequest(ip)
+    if (rateLimiter.hasExceededLimit(ip)):
+        print(f"rate limit hit by ${ip}")
+        return "Rate limit hit"
+    
     user_input = request.form.get('input')
-    print(user_input)
-
     sanitized_input = sanitize_input(user_input)
 
     # Check if the sanitized input matches the original input
@@ -64,7 +69,7 @@ def submit_form():
     # Process the sanitized input
     # Your application logic goes here
 
-    return render_template('success.html')
+    return "Success"
 
 
 @app.route('/')
