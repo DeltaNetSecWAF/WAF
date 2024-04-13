@@ -1,12 +1,17 @@
 import re
 
-blackList = [
-    [r"j\s+a\s+v\s+a\s+s\s+c\s+r\s+i\s+p\s+t"],
-    [r"<script>"],
-    [r"</script>"],
-    [r"<body>"],
-    [r"</body>"],
+cat = re.compile(r"(\'|\")\s+\+\s+(\'|\")").pattern
 
+blackList = [
+    #following patterns are base of researching the samy worm
+    #https://samy.pl/myspace/tech.html
+    [r"j\s+a\s+v\s+a\s+s\s+c\s+r\s+i\s+p\s+t"], #some browser may strip white space 
+    [r"<script>"], #don't allow scripting
+    [r"</script>"],
+    [r"<body>"],#don't allow user to define a body  
+    [r"</body>"],
+    [r"innerHTML"],
+    [rf"i(?={cat})n(?={cat})n(?={cat})e(?={cat})r(?={cat})H(?={cat})T(?={cat})M(?={cat})L"]
 ]
 
 for pattern in blackList:
@@ -17,12 +22,12 @@ Scans the input for any patterns in the blacklist
 returns true if any pattern is found
 false if no possible xss detected
 '''
-def xssScan(input):
+def Scan(input):
     pos = 0
     while pos < len(input):
         for pattern in blackList:
             found = pattern.search(input, pos)
             if found:
-                return True, "possible xss injection detected."
+                return True
     return False
 
