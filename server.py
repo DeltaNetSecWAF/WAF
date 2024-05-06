@@ -1,11 +1,12 @@
 from flask import Flask, request, render_template, abort
-import re
 from rate_limiter import RateLimiter
+from xssScaner import Scan
+from sqlProtection import sql_injection_protection
 
 app = Flask(__name__)
 rateLimiter = RateLimiter(5, 1)
 
-ALLOWED_TAGS = ['<p>', '<br>', '<strong>', '<em>', '<ul>', '<li>', '<ol>']
+
 
 def sanitize_input(input_string):
     # Implement your input sanitization logic here
@@ -15,59 +16,25 @@ def sanitize_input(input_string):
     return sanitized_string
 
 
-def sql_injection_protection(sql_query):
-    # identifying the injection string that can be used to bypass password entry in user form
-    injection_string = '; -- '
-    # if the injection string is found in the query, abort the call to the db
-    if sql_query.__contains__(injection_string):
-        abort(400, 'Potential SQL Injection')
-    # otherwise, return the query to be sent to the db
-    else:
-        return sql_query
-
-
-def check_query_parameterized(sql_query):
-    # defining the regular expression patter to match a parameterized SQL query
-    input_parameter_pattern = r'\b(?:\?|%s)\b'
-
-    # find the count of present parameter placeholders for the supplied sql query
-    query_parameters = len(re.findall(
-        input_parameter_pattern, sql_query, re.IGNORECASE))
-
-    # variable to store boolean value if query is parameterized or not
-    is_parameterized = False
-    # return a boolean as to whether the query is parameterized or not
-    if query_parameters == 0:
-        is_parameterized = False
-    else:
-        is_parameterized = True
-
-    # return the sql query if it is parameterized; abort otherwise
-    if is_parameterized == True:
-        return sql_query
-    else:
-        abort(400, 'Unparameterized SQL Query')
-    
 
 @app.route('/submit', methods=['POST'])
 def submit_form():
     print("got the request!")
     ip = request.remote_addr
+
+    #DDoS protection 
     rateLimiter.addRequest(ip)
     if (rateLimiter.hasExceededLimit(ip)):
         print(f"rate limit hit by ${ip}")
         return "Rate limit hit"
     
+    #XSS protection
     user_input = request.form.get('input')
-    sanitized_input = sanitize_input(user_input)
-
-    # Check if the sanitized input matches the original input
-    if sanitized_input != user_input:
-        # Log or take action against potential XSS attack
-        abort(400, 'Potential XSS attack detected')
-
-    # Process the sanitized input
-    # Your application logic goes here
+    if Scan(user_input):
+        abort(400, 'Possible XSS Attack Detected')
+    
+    #sql injection protection
+    sql_injection_protection(user_input)
 
     return "Success"
 
